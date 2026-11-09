@@ -1,0 +1,17 @@
+{
+    "version": "0.11.0",
+    "description": "Send secrets and files through encrypted links that expire",
+    "homepage": "https://nylzo.com",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/misaon/nylzo/releases/download/v0.11.0/nylzo_0.11.0_windows_amd64.zip",
+            "hash": "86dfa5a72f4de0728984a4a3187634c384a20b2a60a172c982c439edcd5bee55"
+        },
+        "arm64": {
+            "url": "https://github.com/misaon/nylzo/releases/download/v0.11.0/nylzo_0.11.0_windows_arm64.zip",
+            "hash": "8f432132df18fa4c5b53d385b4cfa79bb774e63ac6d31a6b4516123c4a1ac02a"
+        }
+    },
+    "bin": "nylzo.exe"
+}

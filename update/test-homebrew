@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 HOMEBREW_NO_ANALYTICS=1
+
+expected=$(sed -n 's/^  version "\(.*\)"$/\1/p' Formula/nylzo.rb)
+tap=$(mktemp -d)
+trap 'brew uninstall --formula local/nylzo-test/nylzo >/dev/null 2>&1 || true; brew untap local/nylzo-test >/dev/null 2>&1 || true; rm -rf "$tap"' EXIT
+mkdir "$tap/Formula"
+cp Formula/nylzo.rb "$tap/Formula/nylzo.rb"
+git -C "$tap" init --quiet
+git -C "$tap" add Formula
+git -C "$tap" -c user.name=test -c user.email=test@localhost -c commit.gpgsign=false commit --quiet --message test
+
+brew tap local/nylzo-test "$tap"
+brew install --formula local/nylzo-test/nylzo
+brew test local/nylzo-test/nylzo
+
+installed=$("$(brew --prefix)/bin/nylzo" version)
+[[ "$installed" == "$expected" ]] || {
+  printf 'test-homebrew: installed %s, expected %s\n' "$installed" "$expected" >&2
+  exit 1
+}
+if xattr -p com.apple.quarantine "$(brew --prefix)/opt/nylzo/bin/nylzo" >/dev/null 2>&1; then
+  printf 'test-homebrew: the installed binary is quarantined\n' >&2
+  exit 1
+fi
+printf 'test-homebrew: nylzo %s installs and runs\n' "$installed"

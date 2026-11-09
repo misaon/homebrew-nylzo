@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly repository=misaon/nylzo
+readonly release_workflow=.github/workflows/release.yml
+readonly description='Send secrets and files through encrypted links that expire'
+readonly platforms=(darwin_amd64 darwin_arm64 linux_amd64 linux_arm64 windows_amd64 windows_arm64)
+
+fail() {
+  printf 'render: %s\n' "$*" >&2
+  exit 1
+}
+
+archive_name() {
+  case "$1" in
+    windows_*) printf 'nylzo_%s_%s.zip' "$version" "$1" ;;
+    *) printf 'nylzo_%s_%s.tar.gz' "$version" "$1" ;;
+  esac
+}
+
+file_sha256() {
+  if command -v sha256sum >/dev/null; then
+    sha256sum "$1" | cut -d ' ' -f 1
+  else
+    shasum -a 256 "$1" | cut -d ' ' -f 1
+  fi
+}
+
+report_changed() {
+  if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+    printf 'changed=%s\n' "$1" >>"$GITHUB_OUTPUT"
+  fi
+}
+
+tag=$(gh api "repos/${repository}/releases/latest" \
+  --jq 'select(.immutable and (.draft | not) and (.prerelease | not)) | .tag_name')
+[[ "$tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] ||
+  fail "the latest release is not an immutable stable release: ${tag:-none}"
+version=${tag#v}
+
+published=''
+if [[ -f Formula/nylzo.rb ]]; then
+  published=$(sed -n 's/^  version "\(.*\)"$/\1/p' Formula/nylzo.rb)
+fi
+if [[ "$published" == "$version" ]]; then
+  printf 'render: nylzo %s is already published\n' "$version"
+  report_changed false
+  exit 0
+fi
+newest=$(printf '%s\n%s\n' "$published" "$version" | sort -V | tail -n 1)
+[[ "$newest" == "$version" ]] || fail "the latest release ${version} is older than the published ${published}"
+
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+
+downloads=(--pattern checksums.txt --pattern checksums.txt.sigstore.json)
+for platform in "${platforms[@]}"; do
+  downloads+=(--pattern "$(archive_name "$platform")")
+done
+gh release download "$tag" --repo "$repository" --dir "$work" "${downloads[@]}"
+
+cosign verify-blob "$work/checksums.txt" --bundle "$work/checksums.txt.sigstore.json" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity "https://github.com/${repository}/${release_workflow}@refs/tags/${tag}"
+
+for platform in "${platforms[@]}"; do
+  name=$(archive_name "$platform")
+  expected=$(awk -v name="$name" '$2 == name { print $1 }' "$work/checksums.txt")
+  [[ "$expected" =~ ^[0-9a-f]{64}$ ]] || fail "checksums.txt has no single entry for ${name}"
+  [[ "$(file_sha256 "$work/$name")" == "$expected" ]] || fail "${name} does not match checksums.txt"
+  gh attestation verify "$work/$name" --repo "$repository" \
+    --signer-workflow "${repository}/${release_workflow}" \
+    --source-ref "refs/tags/${tag}" --deny-self-hosted-runners >/dev/null
+  printf '%s %s\n' "$platform" "$expected" >>"$work/verified"
+done
+
+verified_sha256() {
+  awk -v platform="$1" '$1 == platform { print $2 }' "$work/verified"
+}
+
+base="https://github.com/${repository}/releases/download/${tag}"
+
+cat >Formula/nylzo.rb <<FORMULA
+class Nylzo < Formula
+  desc "${description}"
+  homepage "https://nylzo.com"
+  version "${version}"
+  license "MIT"
+
+  on_macos do
+    on_arm do
+      url "${base}/$(archive_name darwin_arm64)"
+      sha256 "$(verified_sha256 darwin_arm64)"
+    end
+    on_intel do
+      url "${base}/$(archive_name darwin_amd64)"
+      sha256 "$(verified_sha256 darwin_amd64)"
+    end
+  end
+
+  on_linux do
+    on_arm do
+      url "${base}/$(archive_name linux_arm64)"
+      sha256 "$(verified_sha256 linux_arm64)"
+    end
+    on_intel do
+      url "${base}/$(archive_name linux_amd64)"
+      sha256 "$(verified_sha256 linux_amd64)"
+    end
+  end
+
+  def install
+    bin.install "nylzo"
+  end
+
+  test do
+    assert_equal version.to_s, shell_output("#{bin}/nylzo version").strip
+  end
+end
+FORMULA
+
+cat >bucket/nylzo.json <<MANIFEST
+{
+    "version": "${version}",
+    "description": "${description}",
+    "homepage": "https://nylzo.com",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "${base}/$(archive_name windows_amd64)",
+            "hash": "$(verified_sha256 windows_amd64)"
+        },
+        "arm64": {
+            "url": "${base}/$(archive_name windows_arm64)",
+            "hash": "$(verified_sha256 windows_arm64)"
+        }
+    },
+    "bin": "nylzo.exe"
+}
+MANIFEST
+
+printf 'render: verified and rendered nylzo %s\n' "$version"
+report_changed true
