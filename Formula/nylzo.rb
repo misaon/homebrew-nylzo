@@ -1,7 +1,7 @@
 class Nylzo < Formula
   desc "Send secrets and files through encrypted links that expire"
   homepage "https://nylzo.com"
-  version "0.0.0"
+  version "0.11.0"
   license "MIT"
 
   on_macos do
