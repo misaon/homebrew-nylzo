@@ -65,9 +65,13 @@ jobs:
       - if: runner.os == 'Linux'
         run: echo /home/linuxbrew/.linuxbrew/bin >>"$GITHUB_PATH"
       - if: runner.os != 'Windows'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: update/test-homebrew
       - if: runner.os == 'Windows'
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: ./update/test-scoop.ps1
 
   publish:

@@ -21,6 +21,10 @@ installed=$("$(brew --prefix)/bin/nylzo" version)
   printf 'test-homebrew: installed %s, expected %s\n' "$installed" "$expected" >&2
   exit 1
 }
+brew fetch --formula local/nylzo-test/nylzo
+gh attestation verify "$(brew --cache --formula local/nylzo-test/nylzo)" --repo misaon/nylzo \
+  --signer-workflow misaon/nylzo/.github/workflows/release.yml \
+  --source-ref "refs/tags/v${installed}" --deny-self-hosted-runners
 if xattr -p com.apple.quarantine "$(brew --prefix)/opt/nylzo/bin/nylzo" >/dev/null 2>&1; then
   printf 'test-homebrew: the installed binary is quarantined\n' >&2
   exit 1

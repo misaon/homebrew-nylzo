@@ -22,6 +22,14 @@ $installed = (& nylzo version).Trim()
 if ($installed -ne $manifest.version) {
     throw "Installed nylzo $installed, expected $($manifest.version)"
 }
+$archive = Get-ChildItem -Path (Join-Path $env:USERPROFILE 'scoop\cache') -Filter "nylzo#$installed#*" | Select-Object -First 1
+if (-not $archive) {
+    throw 'Scoop kept no archive in its cache'
+}
+gh attestation verify $archive.FullName --repo misaon/nylzo --signer-workflow misaon/nylzo/.github/workflows/release.yml --source-ref "refs/tags/v$installed" --deny-self-hosted-runners
+if ($LASTEXITCODE -ne 0) {
+    throw "gh attestation verify failed with exit code $LASTEXITCODE"
+}
 $zone = Get-Item -LiteralPath (Join-Path $env:USERPROFILE "scoop\apps\nylzo\current\nylzo.exe") -Stream Zone.Identifier -ErrorAction SilentlyContinue
 if ($zone) {
     throw 'The installed binary carries a Mark of the Web'
