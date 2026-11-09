@@ -22,7 +22,7 @@ $installed = (& nylzo version).Trim()
 if ($installed -ne $manifest.version) {
     throw "Installed nylzo $installed, expected $($manifest.version)"
 }
-$archive = Get-ChildItem -Path (Join-Path $env:USERPROFILE 'scoop\cache') -Filter "nylzo#$installed#*" | Select-Object -First 1
+$archive = Get-ChildItem -Path "$env:USERPROFILE\scoop\cache" -Filter "nylzo#$installed#*" | Select-Object -First 1
 if (-not $archive) {
     throw 'Scoop kept no archive in its cache'
 }
