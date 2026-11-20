@@ -1,28 +1,28 @@
 class Nylzo < Formula
   desc "Send secrets and files through encrypted links that expire"
   homepage "https://nylzo.com"
-  version "0.13.5"
+  version "0.13.7"
   license "MIT"
 
   on_macos do
     on_arm do
-      url "https://github.com/misaon/nylzo/releases/download/v0.13.5/nylzo_0.13.5_darwin_arm64.tar.gz"
-      sha256 "1f0fba03353746a82842f4ae223e3e1185ad3fe6310a7f5fa61d308296908474"
+      url "https://github.com/misaon/nylzo/releases/download/v0.13.7/nylzo_0.13.7_darwin_arm64.tar.gz"
+      sha256 "a171ad6f629ff40ac18222f11a9917c2e9f0b5b8ae734ae858752587bbeeecc7"
     end
     on_intel do
-      url "https://github.com/misaon/nylzo/releases/download/v0.13.5/nylzo_0.13.5_darwin_amd64.tar.gz"
-      sha256 "a7b3345d80f104bc7796db53d1fa1816dd822cdfb6c658dea56fec1cfe948223"
+      url "https://github.com/misaon/nylzo/releases/download/v0.13.7/nylzo_0.13.7_darwin_amd64.tar.gz"
+      sha256 "70e18c22cf62075a5660fcc76b7559faeea7fa089b4d1289850ad4fffde916c9"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/misaon/nylzo/releases/download/v0.13.5/nylzo_0.13.5_linux_arm64.tar.gz"
-      sha256 "5ebe58f22b860b2df21520d2313baf3f6857c0b960a19c60315c9169fdbd0d6f"
+      url "https://github.com/misaon/nylzo/releases/download/v0.13.7/nylzo_0.13.7_linux_arm64.tar.gz"
+      sha256 "bf3c6ef7b0012f46768fe6f4121789c9089d1ba4a3018d1bdd19ce1af3e7763f"
     end
     on_intel do
-      url "https://github.com/misaon/nylzo/releases/download/v0.13.5/nylzo_0.13.5_linux_amd64.tar.gz"
-      sha256 "2f1a97e60cf2eb4d44aa870f405deb8f7cfb5c302a7371e0a872ae5a8ecc33f6"
+      url "https://github.com/misaon/nylzo/releases/download/v0.13.7/nylzo_0.13.7_linux_amd64.tar.gz"
+      sha256 "3bf1c7ce9d858b460f9a58c7c5225ad362486baf3cd01b0a0d8898b13050cab3"
     end
   end
 
